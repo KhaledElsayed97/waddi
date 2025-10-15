@@ -10,10 +10,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dagger.hilt.android.AndroidEntryPoint
 import dev.khaled.waddi.navigation.BottomNavigationBar
 import dev.khaled.waddi.navigation.Screen
 import dev.khaled.waddi.ui.screens.FavouritesScreen
@@ -21,10 +24,17 @@ import dev.khaled.waddi.ui.screens.HomeScreen
 import dev.khaled.waddi.ui.screens.PlaceScreen
 import dev.khaled.waddi.ui.theme.WaddiTheme
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Configure window to show status bar content over the image
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false // Dark status bar content for better visibility over images
+        }
+        
         setContent {
             WaddiTheme {
                 MainScreen()
@@ -37,6 +47,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val viewModel: MainViewModel = hiltViewModel()
     val currentRoute = navBackStackEntry?.destination?.route
 
     // Hide bottom navigation bar on place screen
@@ -53,13 +64,17 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = if (showBottomBar) {
+                Modifier.padding(innerPadding)
+            } else {
+                Modifier.fillMaxSize() // No padding for place screen to allow edge-to-edge
+            }
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
                     onPlaceClick = { placeId ->
                         navController.navigate(Screen.Place.createRoute(placeId))
-                    }
+                    }, viewModel = viewModel
                 )
             }
             composable(Screen.Favourites.route) {
@@ -71,7 +86,8 @@ fun MainScreen() {
                     placeId = placeId,
                     onBackClick = {
                         navController.popBackStack()
-                    }
+                    },
+                    viewModel = viewModel
                 )
             }
         }

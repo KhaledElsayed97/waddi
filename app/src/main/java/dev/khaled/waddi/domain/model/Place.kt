@@ -1,6 +1,6 @@
 package dev.khaled.waddi.domain.model
 
-data class PlaceDomainModel(
+data class Place(
     val id: String,
     val name: String,
     val description: String,
@@ -10,5 +10,6 @@ data class PlaceDomainModel(
     val rating: Float,
     val distance: String,
     val status: String,
-    val imageRes: Int
+    val imageUrl: String,
+    val isFeatured: Boolean? = false
 )

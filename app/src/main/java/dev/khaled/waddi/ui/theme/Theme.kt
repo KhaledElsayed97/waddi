@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
@@ -33,6 +34,28 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+val SpectrumLightColors = lightColorScheme(
+    primary = PurplePrimary,
+    onPrimary = OnPurplePrimary,
+    primaryContainer = PurplePrimaryContainer,
+    onPrimaryContainer = PurplePrimary,
+
+    secondary = BlackSurface,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF2E2E2E),
+    onSecondaryContainer = Color.White,
+
+    background = WhiteBackground,
+    onBackground = BlackText,
+
+    surface = OffWhiteSurface,
+    onSurface = BlackText,
+
+    outline = Color(0xFFB8A4CC),
+    error = Color(0xFFD32F2F),
+    onError = Color.White
+)
+
 @Composable
 fun WaddiTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -52,7 +75,7 @@ fun WaddiTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = RobotoTypography,
         content = content
     )
 }

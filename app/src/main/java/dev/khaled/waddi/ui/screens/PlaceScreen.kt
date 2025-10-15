@@ -1,8 +1,19 @@
 package dev.khaled.waddi.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -12,46 +23,67 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import dev.khaled.waddi.MainViewModel
 import dev.khaled.waddi.R
+import dev.khaled.waddi.domain.model.Place
 import dev.khaled.waddi.ui.components.StatusChip
+import java.util.Locale
 
-// Sample detailed place data - in a real app, this would come from a repository
+// Sample detailed place data - fallback when place is not found
 val samplePlace = Place(
-    id = "1",
-    name = "Pizza Palace",
-    description = "Best pizza in town with authentic Italian flavors. We use fresh ingredients and traditional recipes passed down through generations. Our wood-fired oven creates the perfect crispy crust that our customers love. Come experience the taste of Italy right here in your neighborhood!",
-    category = "Food",
-    location = "123 Main Street, Downtown District",
-    operatingTime = "Mon-Sun: 11:00 AM - 10:00 PM",
-    rating = 4.5f,
-    distance = "0.5 km",
-    status = "Open",
-    imageRes = R.drawable.ic_food_placeholder
+    id = "fallback",
+    name = "Place Not Found",
+    description = "This place could not be found. Please try again or go back to the home screen.",
+    category = "all",
+    location = "Unknown Location",
+    operatingTime = "N/A",
+    rating = 0.0f,
+    distance = "N/A",
+    status = "Unknown",
+    imageUrl = "https://i.postimg.cc/JzzSJsgW/img-entertainment.jpg"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceScreen(
-    placeId: String,
-    onBackClick: () -> Unit
+    placeId: String, onBackClick: () -> Unit, viewModel: MainViewModel
 ) {
-    // In a real app, you would fetch the place by ID from a repository
-    val place = samplePlace // This should be fetched based on placeId
-    
+    // Fetch the place by ID from the viewModel
+    val place = viewModel.getPlaceById(placeId) ?: samplePlace
+
     // State for favorite toggle
     var isFavorite by remember { mutableStateOf(false) }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -63,185 +95,277 @@ fun PlaceScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Place Image - reaches top edge
+            // Place Image - extends to top edge including status bar
             Box {
-                Image(
-                    painter = painterResource(id = place.imageRes),
+                AsyncImage(
+                    model = place.imageUrl,
                     contentDescription = place.name,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp),
-                    contentScale = ContentScale.Crop
+                        .height(350.dp), // Image extends to top edge
+                    contentScale = ContentScale.Crop,
                 )
-                
-                // Floating Back Button
-                FloatingActionButton(
+
+                // Gradient overlay for better button visibility
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.3f), Color.Transparent
+                                )
+                            )
+                        )
+                )
+
+                // Back Button with squared rounded background
+                IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
-                        .padding(16.dp)
-                        .size(48.dp),
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    contentColor = MaterialTheme.colorScheme.onSurface
+                        .padding(start = 16.dp, top = 8.dp)
+                        .statusBarsPadding() // Button positioned below status bar
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                
-                // Floating Favorite Button (Heart)
-                FloatingActionButton(
+
+                // Favorite Button (Heart) with squared rounded background
+                IconButton(
                     onClick = { isFavorite = !isFavorite },
                     modifier = Modifier
-                        .padding(16.dp)
-                        .size(48.dp)
-                        .align(Alignment.TopEnd),
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    contentColor = if (isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface
+                        .padding(end = 16.dp, top = 8.dp)
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
-            
+
             // Content Padding
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(vertical = 16.dp)
             ) {
-                // Status and Rating Row
+                ////////////////////////// Place Title /////////////////////////////
+                Text(
+                    text = place.name.uppercase(Locale.getDefault()),
+                    fontFamily = FontFamily(Font(R.font.roboto_bold)),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+
+                ///////////////////////// Location Row/////////////////////////////
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(all = 16.dp), verticalAlignment = Alignment.CenterVertically
                 ) {
-                    StatusChip(status = place.status)
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Location",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = place.location,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = place.distance, style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        ), color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ///////////////////////// Stats Row ///////////////////////////////
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    // Reviews Box
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp), contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = ImageVector.vectorResource(R.drawable.ic_review), // Using star as placeholder for reviews icon
+                                contentDescription = "Reviews",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "184", style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ), color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Reviews",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Ranking Box
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp), contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = ImageVector.vectorResource(id = R.drawable.ic_star),
+                                contentDescription = "Ranking",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = place.rating.toString(),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Rating",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Price Index Box
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp), contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = place.rating.toString(),
-                            style = MaterialTheme.typography.titleMedium.copy(
+                            text = "$$$", style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = place.distance,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ), color = MaterialTheme.colorScheme.onSurface, fontSize = 20.sp
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Category Badge
-                Text(
-                    text = place.category,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Description
-                Text(
-                    text = "About",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = place.description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 24.sp
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Location Section
-                LocationSection(location = place.location)
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Operating Hours Section
-                OperatingHoursSection(operatingTime = place.operatingTime)
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Action Buttons
-                ActionButtons(isFavorite = isFavorite, onFavoriteToggle = { isFavorite = !isFavorite })
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ActionButtons()
+
+
+            // Category Badge
+//            Text(
+//                text = place.category,
+//                style = MaterialTheme.typography.labelLarge,
+//                color = MaterialTheme.colorScheme.primary,
+//                modifier = Modifier
+//                    .background(
+//                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+//                        RoundedCornerShape(8.dp)
+//                    )
+//                    .padding(horizontal = 12.dp, vertical = 6.dp)
+//            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Description
+            Text(
+                text = "About",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = place.description,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 24.sp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Operating Hours Section
+            OperatingHoursSection(operatingTime = place.operatingTime)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Action Buttons
         }
     }
 }
 
-@Composable
-fun LocationSection(location: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = "Location",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column {
-                Text(
-                    text = "Location",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = location,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun OperatingHoursSection(operatingTime: String) {
@@ -264,16 +388,14 @@ fun OperatingHoursSection(operatingTime: String) {
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column {
                 Text(
-                    text = "Operating Hours",
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    text = "Operating Hours", style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    ), color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -287,48 +409,50 @@ fun OperatingHoursSection(operatingTime: String) {
 }
 
 @Composable
-fun ActionButtons(
-    isFavorite: Boolean,
-    onFavoriteToggle: () -> Unit
-) {
+fun ActionButtons() {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Favorite Button
         OutlinedButton(
-            onClick = onFavoriteToggle,
+            onClick = {},
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = if (isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.primary
+                contentColor = MaterialTheme.colorScheme.primary
             )
         ) {
             Icon(
-                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                modifier = Modifier.size(18.dp)
+                imageVector = Icons.Default.Phone,
+                contentDescription = "",
+                modifier = Modifier.size(30.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isFavorite) "Remove from Favorites" else "Add to Favorites",
-                style = MaterialTheme.typography.labelLarge.copy(
+                text = "Call", style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Medium
-                )
+                ),
+                fontSize = 16.sp
             )
         }
-        
+
         // Call Button
         Button(
             onClick = { /* TODO: Handle call action */ },
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(12.dp)
         ) {
+            Icon(
+                imageVector = ImageVector.vectorResource(R.drawable.ic_navigate),
+                contentDescription = "",
+                modifier = Modifier.size(30.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Call",
-                style = MaterialTheme.typography.labelLarge.copy(
+                text = "Navigate", style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Medium
-                )
+                ),
+                fontSize = 16.sp
             )
         }
     }
